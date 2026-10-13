@@ -1,7 +1,9 @@
 {% extends 'blog/base.html' %}
 
 {% block content %}
-    {% if current_author %}
+    {% if query %}
+    <h2 class="author-title">'{{ query }}' 검색 결과 {{ posts|length }}개</h2>
+    {% elif current_author %}
     <h2 class="author-title">{{ current_author.username }}의 글 {{ posts|length }}개</h2>
     {% endif %}
 
@@ -15,7 +17,7 @@
             </span>
         </li>
     {% empty %}
-        <li>게시물이 없습니다.</li>
+        <li>{% if query %}검색 결과가 없습니다.{% else %}게시물이 없습니다.{% endif %}</li>
     {% endfor %}
     </ul>
 {% endblock %}

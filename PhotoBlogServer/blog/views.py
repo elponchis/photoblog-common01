@@ -17,11 +17,14 @@ def sidebar_context():
     return {'authors': authors, 'recent_posts': recent_posts}
 
 def post_list(request):
+    query = request.GET.get('q', '').strip()
     posts = Post.objects.filter(
         published_date__lte=timezone.now()
     ).order_by('-published_date')
+    if query:
+        posts = posts.filter(title__icontains=query)
     return render(request, 'blog/post_list.html',
-                  {'posts': posts, **sidebar_context()})
+                  {'posts': posts, 'query': query, **sidebar_context()})
 
 def author_posts(request, username):
     author = get_object_or_404(User, username=username)

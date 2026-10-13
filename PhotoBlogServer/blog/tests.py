@@ -227,6 +227,16 @@ class PostListViewTest(TestCase):
         response = self.client.get(reverse('author_posts', kwargs={'username': 'nobody'}))
         self.assertEqual(response.status_code, 404)
 
+    def test_search_by_title(self):
+        for title in ('Django 배포 기록', '안드로이드 업로드', 'django 테스트'):
+            Post.objects.create(author=self.user, title=title, text='본문',
+                                published_date=timezone.now())
+
+        response = self.client.get('/', {'q': 'django'})
+
+        titles = sorted(post.title for post in response.context['posts'])
+        self.assertEqual(titles, ['Django 배포 기록', 'django 테스트'])
+
     def test_unpublished_post_hidden(self):
         Post.objects.create(
             author=self.user,

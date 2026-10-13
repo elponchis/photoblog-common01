@@ -46,9 +46,66 @@ h1, h2, h3, h4 {
 
 .top-menu, .top-menu:hover, .top-menu:visited {
     color: #ffffff;
-    float: right;
     font-size: 26pt;
-    margin-right: 20px;
+}
+
+.header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.header-bar:before,
+.header-bar:after {
+    content: none;
+}
+
+.header-tools {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-search {
+    display: flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 20px;
+    padding: 0 6px 0 16px;
+}
+
+.header-search input {
+    width: 200px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #ffffff;
+    font-size: 15px;
+    padding: 8px 0;
+}
+
+.header-search input::placeholder {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.header-search button {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 18px;
+    padding: 6px 8px;
+}
+
+@media (max-width: 767px) {
+    .header-bar {
+        flex-wrap: wrap;
+    }
+
+    .header-search input {
+        width: 140px;
+    }
 }
 
 .post {
@@ -163,4 +220,7 @@ h1, h2, h3, h4 {
 
 .author-title {
     margin: 0 0 24px;
+    font-family: inherit;
+    font-size: 22px;
+    font-weight: bold;
 }
