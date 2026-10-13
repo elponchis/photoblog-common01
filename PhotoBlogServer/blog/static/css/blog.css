@@ -65,6 +65,7 @@ h1, h2, h3, h4 {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 40px 32px;
+    align-items: start;
 }
 
 @media (max-width: 767px) {
@@ -83,9 +84,8 @@ h1, h2, h3, h4 {
 }
 
 .post-card .intruder-image-list {
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    border-radius: 6px;
+    max-width: 100%;
+    height: auto;
 }
 
 .author-nav {
