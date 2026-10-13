@@ -1,0 +1,24 @@
+# Python / Django
+venv/
+__pycache__/
+*.py[cod]
+db.sqlite3
+staticfiles/
+.env
+
+# Android
+build/
+.gradle/
+local.properties
+*.apk
+*.aab
+captures/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
