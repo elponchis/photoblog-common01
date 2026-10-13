@@ -2,6 +2,7 @@ import io
 import json
 import shutil
 import tempfile
+from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
@@ -236,6 +237,46 @@ class PostListViewTest(TestCase):
 
         titles = sorted(post.title for post in response.context['posts'])
         self.assertEqual(titles, ['Django 배포 기록', 'django 테스트'])
+
+    def make_posts(self, count):
+        now = timezone.now()
+        Post.objects.bulk_create([
+            Post(author=self.user, title=f'글 {i:03d}', text='본문',
+                 published_date=now - timedelta(minutes=i))
+            for i in range(count)
+        ])
+
+    def test_list_shows_ten_posts_per_page(self):
+        self.make_posts(25)
+
+        first = self.client.get('/')
+        third = self.client.get('/', {'page': 3})
+
+        self.assertEqual(len(first.context['posts']), 10)
+        self.assertEqual(first.context['posts'][0].title, '글 000')
+        self.assertEqual(len(third.context['posts']), 5)
+
+    def test_list_stops_at_ten_pages_but_search_finds_older(self):
+        self.make_posts(105)
+
+        response = self.client.get('/', {'page': 11})
+        self.assertEqual(response.context['page_obj'].paginator.num_pages, 10)
+        self.assertEqual(response.context['posts'][9].title, '글 099')
+
+        found = self.client.get('/', {'q': '글 104'})
+        self.assertEqual([p.title for p in found.context['posts']], ['글 104'])
+
+    def test_sidebar_limits_items_to_five(self):
+        for i in range(7):
+            user = User.objects.create_user(username=f'writer{i}', password='test1234')
+            Post.objects.create(author=user, title=f'작성자 {i}', text='본문',
+                                published_date=timezone.now())
+
+        response = self.client.get('/')
+
+        self.assertEqual(len(response.context['top_authors']), 5)
+        self.assertEqual(len(response.context['recent_posts']), 5)
+        self.assertEqual(len(response.context['all_authors']), 7)
 
     def test_unpublished_post_hidden(self):
         Post.objects.create(

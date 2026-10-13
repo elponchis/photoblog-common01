@@ -224,3 +224,114 @@ h1, h2, h3, h4 {
     font-size: 22px;
     font-weight: bold;
 }
+
+.pager-nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 28px;
+}
+
+.pager-nav a,
+.pager-nav span {
+    min-width: 36px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 15px;
+}
+
+.pager-nav a {
+    color: #333333;
+}
+
+.pager-nav a:hover {
+    background-color: #fff1dd;
+    text-decoration: none;
+}
+
+.pager-nav .current {
+    background-color: #ff9400;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.pager-nav .disabled {
+    color: #cccccc;
+}
+
+.sidebar-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.see-all {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #999999;
+    font-size: 14px;
+}
+
+.see-all:hover {
+    color: #ff9400;
+}
+
+.list-dialog {
+    width: min(480px, calc(100vw - 32px));
+    max-height: 70vh;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+.list-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.list-dialog-head {
+    position: sticky;
+    top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.list-dialog-head h3 {
+    margin: 0;
+    color: #ff9400;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.dialog-close {
+    background: none;
+    border: none;
+    font-size: 26px;
+    line-height: 1;
+    color: #999999;
+}
+
+.dialog-close:hover {
+    color: #333333;
+}
+
+.list-dialog .sidebar-list {
+    padding: 8px 24px 16px;
+}
+
+.dialog-close:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.pager-nav .pager-arrow {
+    font-size: 20px;
+    line-height: 1;
+}

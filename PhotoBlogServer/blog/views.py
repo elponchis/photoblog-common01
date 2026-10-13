@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
@@ -7,14 +8,32 @@ from .forms import PostForm
 from rest_framework import viewsets
 from .serializers import PostSerializer
 
+POSTS_PER_PAGE = 10
+MAX_PAGES = 10
+SIDEBAR_ITEMS = 5
+
 def sidebar_context():
     now = timezone.now()
     authors = (User.objects
                .annotate(post_count=Count('post', filter=Q(post__published_date__lte=now)))
                .filter(post_count__gt=0)
                .order_by('username'))
-    recent_posts = Post.objects.filter(published_date__lte=now).order_by('-published_date')[:5]
-    return {'authors': authors, 'recent_posts': recent_posts}
+    all_posts = Post.objects.filter(published_date__lte=now).order_by('-published_date')
+    return {
+        'top_authors': authors.order_by('-post_count', 'username')[:SIDEBAR_ITEMS],
+        'all_authors': authors,
+        'recent_posts': all_posts[:SIDEBAR_ITEMS],
+        'all_posts': all_posts,
+        'sidebar_limit': SIDEBAR_ITEMS,
+    }
+
+def paginated(request, posts, limit_pages=True):
+    # 검색이 아닐 때는 최근 MAX_PAGES 페이지까지만 넘겨 볼 수 있다
+    total = posts.count()
+    if limit_pages:
+        posts = posts[:POSTS_PER_PAGE * MAX_PAGES]
+    page_obj = Paginator(posts, POSTS_PER_PAGE).get_page(request.GET.get('page'))
+    return {'page_obj': page_obj, 'posts': page_obj.object_list, 'total': total}
 
 def post_list(request):
     query = request.GET.get('q', '').strip()
@@ -23,8 +42,11 @@ def post_list(request):
     ).order_by('-published_date')
     if query:
         posts = posts.filter(title__icontains=query)
-    return render(request, 'blog/post_list.html',
-                  {'posts': posts, 'query': query, **sidebar_context()})
+    return render(request, 'blog/post_list.html', {
+        'query': query,
+        **paginated(request, posts, limit_pages=not query),
+        **sidebar_context(),
+    })
 
 def author_posts(request, username):
     author = get_object_or_404(User, username=username)
@@ -32,8 +54,8 @@ def author_posts(request, username):
         author=author, published_date__lte=timezone.now()
     ).order_by('-published_date')
     return render(request, 'blog/post_list.html', {
-        'posts': posts,
         'current_author': author,
+        **paginated(request, posts),
         **sidebar_context(),
     })
 
