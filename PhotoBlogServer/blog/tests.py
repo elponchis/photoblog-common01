@@ -201,6 +201,23 @@ class PostListViewTest(TestCase):
         response = self.client.get('/')
         self.assertContains(response, '게시된 글')
 
+    def test_author_page_shows_only_that_author(self):
+        other = User.objects.create_user(username='other', password='test1234')
+        Post.objects.create(author=self.user, title='내 글', text='본문',
+                            published_date=timezone.now())
+        Post.objects.create(author=other, title='남의 글', text='본문',
+                            published_date=timezone.now())
+
+        response = self.client.get(reverse('author_posts', kwargs={'username': 'other'}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '남의 글')
+        self.assertNotContains(response, '내 글')
+
+    def test_unknown_author_page_404(self):
+        response = self.client.get(reverse('author_posts', kwargs={'username': 'nobody'}))
+        self.assertEqual(response.status_code, 404)
+
     def test_unpublished_post_hidden(self):
         Post.objects.create(
             author=self.user,

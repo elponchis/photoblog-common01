@@ -1,3 +1,5 @@
+from django.contrib.auth.models import User
+from django.db.models import Count, Q
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from .models import Post
@@ -5,11 +7,30 @@ from .forms import PostForm
 from rest_framework import viewsets
 from .serializers import PostSerializer
 
+def published_authors():
+    published = Q(post__published_date__lte=timezone.now())
+    return (User.objects
+            .annotate(post_count=Count('post', filter=published))
+            .filter(post_count__gt=0)
+            .order_by('username'))
+
 def post_list(request):
     posts = Post.objects.filter(
         published_date__lte=timezone.now()
     ).order_by('published_date')
-    return render(request, 'blog/post_list.html', {'posts': posts})
+    return render(request, 'blog/post_list.html',
+                  {'posts': posts, 'authors': published_authors()})
+
+def author_posts(request, username):
+    author = get_object_or_404(User, username=username)
+    posts = Post.objects.filter(
+        author=author, published_date__lte=timezone.now()
+    ).order_by('published_date')
+    return render(request, 'blog/post_list.html', {
+        'posts': posts,
+        'authors': published_authors(),
+        'current_author': author,
+    })
 
 def post_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)

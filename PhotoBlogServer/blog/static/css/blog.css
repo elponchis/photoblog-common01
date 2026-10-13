@@ -61,3 +61,59 @@ h1, h2, h3, h4 {
 .intruder-image-list {
     object-fit: cover;
 }
+.post-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 40px 32px;
+}
+
+@media (max-width: 767px) {
+    .post-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.post-card {
+    margin-bottom: 0;
+}
+
+.post-card h1 {
+    font-size: 24pt;
+    margin: 12px 0 4px;
+}
+
+.post-card .intruder-image-list {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 6px;
+}
+
+.author-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px;
+}
+
+.author-nav li {
+    display: inline-block;
+    margin: 0 6px 8px 0;
+}
+
+.author-nav a {
+    display: inline-block;
+    padding: 4px 12px;
+    border: 1px solid #ff9400;
+    border-radius: 16px;
+    color: #ff9400;
+    text-decoration: none;
+}
+
+.author-nav li.active a,
+.author-nav a:hover {
+    background-color: #ff9400;
+    color: #ffffff;
+}
+
+.author-title {
+    margin: 0 0 24px;
+}
