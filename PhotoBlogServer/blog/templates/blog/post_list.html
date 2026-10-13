@@ -1,15 +1,6 @@
 {% extends 'blog/base.html' %}
 
 {% block content %}
-    <ul class="author-nav">
-        <li{% if not current_author %} class="active"{% endif %}><a href="{% url 'post_list' %}">전체</a></li>
-        {% for author in authors %}
-        <li{% if author == current_author %} class="active"{% endif %}>
-            <a href="{% url 'author_posts' username=author.username %}">{{ author.username }} ({{ author.post_count }})</a>
-        </li>
-        {% endfor %}
-    </ul>
-
     {% if current_author %}
     <h2 class="author-title">{{ current_author.username }}의 글 {{ posts|length }}개</h2>
     {% endif %}
@@ -27,4 +18,8 @@
         <li>게시물이 없습니다.</li>
     {% endfor %}
     </ul>
+{% endblock %}
+
+{% block sidebar %}
+    {% include 'blog/sidebar.html' %}
 {% endblock %}

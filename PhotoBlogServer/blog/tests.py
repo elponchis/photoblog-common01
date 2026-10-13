@@ -220,8 +220,8 @@ class PostListViewTest(TestCase):
         response = self.client.get(reverse('author_posts', kwargs={'username': 'other'}))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, '남의 글')
-        self.assertNotContains(response, '내 글')
+        titles = [post.title for post in response.context['posts']]
+        self.assertEqual(titles, ['남의 글'])
 
     def test_unknown_author_page_404(self):
         response = self.client.get(reverse('author_posts', kwargs={'username': 'nobody'}))

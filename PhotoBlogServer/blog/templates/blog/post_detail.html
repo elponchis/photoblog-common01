@@ -1,6 +1,7 @@
 {% extends 'blog/base.html' %}
 
 {% block content %}
+<a class="back-link" href="{% url 'post_list' %}">&larr; 목록으로</a>
 <div class="post">
     {% if post.published_date %}
     <div class="date">
@@ -19,4 +20,8 @@
     {% endif %}
     <p>{{ post.text|linebreaksbr }}</p>
 </div>
+{% endblock %}
+
+{% block sidebar %}
+    {% include 'blog/sidebar.html' %}
 {% endblock %}

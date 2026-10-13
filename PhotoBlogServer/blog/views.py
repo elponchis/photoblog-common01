@@ -7,19 +7,21 @@ from .forms import PostForm
 from rest_framework import viewsets
 from .serializers import PostSerializer
 
-def published_authors():
-    published = Q(post__published_date__lte=timezone.now())
-    return (User.objects
-            .annotate(post_count=Count('post', filter=published))
-            .filter(post_count__gt=0)
-            .order_by('username'))
+def sidebar_context():
+    now = timezone.now()
+    authors = (User.objects
+               .annotate(post_count=Count('post', filter=Q(post__published_date__lte=now)))
+               .filter(post_count__gt=0)
+               .order_by('username'))
+    recent_posts = Post.objects.filter(published_date__lte=now).order_by('-published_date')[:5]
+    return {'authors': authors, 'recent_posts': recent_posts}
 
 def post_list(request):
     posts = Post.objects.filter(
         published_date__lte=timezone.now()
     ).order_by('-published_date')
     return render(request, 'blog/post_list.html',
-                  {'posts': posts, 'authors': published_authors()})
+                  {'posts': posts, **sidebar_context()})
 
 def author_posts(request, username):
     author = get_object_or_404(User, username=username)
@@ -28,13 +30,17 @@ def author_posts(request, username):
     ).order_by('-published_date')
     return render(request, 'blog/post_list.html', {
         'posts': posts,
-        'authors': published_authors(),
         'current_author': author,
+        **sidebar_context(),
     })
 
 def post_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)
-    return render(request, 'blog/post_detail.html', {'post': post})
+    return render(request, 'blog/post_detail.html', {
+        'post': post,
+        'current_author': post.author,
+        **sidebar_context(),
+    })
 
 def post_new(request):
     if request.method == "POST":

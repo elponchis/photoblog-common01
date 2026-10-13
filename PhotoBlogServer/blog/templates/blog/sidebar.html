@@ -1,0 +1,30 @@
+<aside class="sidebar">
+    <section class="sidebar-box">
+        <h3>작성자</h3>
+        <ul class="sidebar-list">
+            <li{% if not current_author %} class="active"{% endif %}>
+                <a href="{% url 'post_list' %}">전체</a>
+            </li>
+            {% for author in authors %}
+            <li{% if author == current_author %} class="active"{% endif %}>
+                <a href="{% url 'author_posts' username=author.username %}">{{ author.username }}</a>
+                <span class="count">{{ author.post_count }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <section class="sidebar-box">
+        <h3>최근 글</h3>
+        <ul class="sidebar-list">
+            {% for recent in recent_posts %}
+            <li{% if recent == post %} class="active"{% endif %}>
+                <a href="{% url 'post_detail' pk=recent.pk %}">{{ recent.title }}</a>
+                <span class="count">{{ recent.published_date|date:"m-d" }}</span>
+            </li>
+            {% empty %}
+            <li>아직 글이 없습니다.</li>
+            {% endfor %}
+        </ul>
+    </section>
+</aside>
