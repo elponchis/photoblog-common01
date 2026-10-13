@@ -2,7 +2,9 @@ from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from .models import Post
 from .forms import PostForm
 from rest_framework import viewsets
@@ -44,6 +46,7 @@ def post_list(request):
         posts = posts.filter(title__icontains=query)
     return render(request, 'blog/post_list.html', {
         'query': query,
+        'list_url': request.get_full_path(),
         **paginated(request, posts, limit_pages=not query),
         **sidebar_context(),
     })
@@ -55,14 +58,20 @@ def author_posts(request, username):
     ).order_by('-published_date')
     return render(request, 'blog/post_list.html', {
         'current_author': author,
+        'list_url': request.get_full_path(),
         **paginated(request, posts),
         **sidebar_context(),
     })
 
 def post_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)
+    # 목록에서 넘어올 때 붙인 ?next= 로 보던 페이지·검색 결과로 돌아간다
+    list_url = request.GET.get('next', '')
+    if not url_has_allowed_host_and_scheme(list_url, allowed_hosts={request.get_host()}):
+        list_url = reverse('post_list')
     return render(request, 'blog/post_detail.html', {
         'post': post,
+        'list_url': list_url,
         'current_author': post.author,
         **sidebar_context(),
     })

@@ -278,6 +278,24 @@ class PostListViewTest(TestCase):
         self.assertEqual(len(response.context['recent_posts']), 5)
         self.assertEqual(len(response.context['all_authors']), 7)
 
+    def test_detail_back_link_returns_to_previous_list(self):
+        self.make_posts(15)
+        post = Post.objects.get(title='글 012')
+
+        listing = self.client.get('/', {'page': 2})
+        self.assertContains(listing, f'/post/{post.pk}/?next=/%3Fpage%3D2')
+
+        detail = self.client.get(f'/post/{post.pk}/', {'next': '/?page=2'})
+        self.assertEqual(detail.context['list_url'], '/?page=2')
+
+    def test_detail_back_link_ignores_external_url(self):
+        self.make_posts(1)
+        post = Post.objects.first()
+
+        detail = self.client.get(f'/post/{post.pk}/', {'next': 'https://example.com/'})
+
+        self.assertEqual(detail.context['list_url'], '/')
+
     def test_unpublished_post_hidden(self):
         Post.objects.create(
             author=self.user,

@@ -1,16 +1,21 @@
 {% extends 'blog/base.html' %}
 
 {% block content %}
-    {% if query %}
-    <h2 class="author-title">'{{ query }}' 검색 결과 {{ total }}개</h2>
-    {% elif current_author %}
-    <h2 class="author-title">{{ current_author.username }}의 글 {{ total }}개</h2>
+    {% if query or current_author %}
+    <div class="list-head">
+        {% if query %}
+        <h2 class="author-title">'{{ query }}' 검색 결과 {{ total }}개</h2>
+        {% else %}
+        <h2 class="author-title">{{ current_author.username }}의 글 {{ total }}개</h2>
+        {% endif %}
+        <a class="home-link" href="{% url 'post_list' %}">&times; 전체 글 보기</a>
+    </div>
     {% endif %}
 
     <ul class="post-list">
     {% for post in posts %}
         <li>
-            <a class="post-list-title" href="{% url 'post_detail' pk=post.pk %}">{{ post.title }}</a>
+            <a class="post-list-title" href="{% url 'post_detail' pk=post.pk %}?next={{ list_url|urlencode }}">{{ post.title }}</a>
             <span class="date">
                 <a href="{% url 'author_posts' username=post.author_name %}">{{ post.author_name }}</a>
                 · {{ post.published_date|date:"Y-m-d H:i" }}

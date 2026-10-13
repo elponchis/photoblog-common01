@@ -29,7 +29,7 @@
         <ul class="sidebar-list">
             {% for recent in recent_posts %}
             <li{% if recent == post %} class="active"{% endif %}>
-                <a href="{% url 'post_detail' pk=recent.pk %}">{{ recent.title }}</a>
+                <a href="{% url 'post_detail' pk=recent.pk %}?next={{ list_url|urlencode }}">{{ recent.title }}</a>
                 <span class="count">{{ recent.published_date|date:"m-d" }}</span>
             </li>
             {% empty %}
@@ -62,7 +62,7 @@
     <ul class="sidebar-list">
         {% for item in all_posts %}
         <li{% if item == post %} class="active"{% endif %}>
-            <a href="{% url 'post_detail' pk=item.pk %}">{{ item.title }}</a>
+            <a href="{% url 'post_detail' pk=item.pk %}?next={{ list_url|urlencode }}">{{ item.title }}</a>
             <span class="count">{{ item.author_name }} · {{ item.published_date|date:"Y-m-d" }}</span>
         </li>
         {% endfor %}

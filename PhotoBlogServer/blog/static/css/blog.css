@@ -335,3 +335,27 @@ h1, h2, h3, h4 {
     font-size: 20px;
     line-height: 1;
 }
+
+.list-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.list-head .author-title {
+    margin: 0;
+}
+
+.home-link,
+.home-link:visited {
+    color: #828282;
+    font-size: 15px;
+    white-space: nowrap;
+}
+
+.home-link:hover {
+    color: #ff9400;
+    text-decoration: none;
+}
