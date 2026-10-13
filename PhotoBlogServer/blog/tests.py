@@ -1,8 +1,10 @@
 import io
 import json
+import shutil
+import tempfile
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
@@ -12,6 +14,11 @@ from rest_framework.test import APIClient
 from .models import Post
 
 API_URL = '/api_root/Post/'
+TEST_MEDIA_ROOT = tempfile.mkdtemp()
+
+
+def tearDownModule():
+    shutil.rmtree(TEST_MEDIA_ROOT, ignore_errors=True)
 
 
 def make_image_file(name='test.jpg', size=(100, 80), color=(200, 60, 60)):
@@ -23,6 +30,7 @@ def make_image_file(name='test.jpg', size=(100, 80), color=(200, 60, 60)):
     return buffer
 
 
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
 class PostApiTest(TestCase):
 
     def setUp(self):
@@ -179,6 +187,7 @@ class PostApiTest(TestCase):
         self.assertEqual(Post.objects.count(), 0)
 
 
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
 class PostListViewTest(TestCase):
     """웹 페이지(브라우저 화면) 동작 확인"""
 
