@@ -150,6 +150,22 @@ class PostApiTest(TestCase):
         self.assertEqual(User.objects.count(), 1)
         self.assertEqual(Post.objects.first().author, self.user)
 
+    def test_post_without_author_fails(self):
+        now = timezone.now().isoformat()
+        response = self.auth_client.post(API_URL, {
+            'author': '',
+            'author_name': '',
+            'title': '작성자 없음',
+            'text': '본문',
+            'created_date': now,
+            'published_date': now,
+            'image': make_image_file(),
+        }, format='multipart')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('author_name', json.loads(response.content))
+        self.assertEqual(Post.objects.count(), 0)
+
     def test_post_without_title_fails(self):
         now = timezone.now().isoformat()
         response = self.auth_client.post(API_URL, {
