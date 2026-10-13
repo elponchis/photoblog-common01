@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREFS = "photoviewer_prefs";
     private static final String KEY_URL = "site_url";
     private static final String KEY_TOKEN = "token";
-    private static final String KEY_AUTHOR = "author";
+    private static final String KEY_AUTHOR = "author_name";
 
     private static final String LOCAL_URL = "http://10.0.2.2:8000";
     private static final String CLOUD_URL = "https://elponchis.pythonanywhere.com";
@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String siteUrl;
     private String token;
-    private String authorId;
+    private String authorName;
 
     private Uri pickedImageUri;
     private ImageView dialogPreview;
@@ -110,18 +110,25 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         siteUrl = prefs.getString(KEY_URL, LOCAL_URL);
         token = prefs.getString(KEY_TOKEN, "");
-        authorId = prefs.getString(KEY_AUTHOR, "1");
+        authorName = prefs.getString(KEY_AUTHOR, "");
         textServer.setText(siteUrl);
     }
 
-    private void saveSettings(String url, String newToken, String author) {
+    private void saveSettings(String url, String newToken) {
         getSharedPreferences(PREFS, MODE_PRIVATE)
                 .edit()
                 .putString(KEY_URL, url)
                 .putString(KEY_TOKEN, newToken)
-                .putString(KEY_AUTHOR, author)
                 .apply();
         loadSettings();
+    }
+
+    private void saveAuthor(String author) {
+        authorName = author;
+        getSharedPreferences(PREFS, MODE_PRIVATE)
+                .edit()
+                .putString(KEY_AUTHOR, author)
+                .apply();
     }
 
     // 동기화 버튼
@@ -139,21 +146,28 @@ public class MainActivity extends AppCompatActivity {
         pickedImageUri = null;
 
         View form = getLayoutInflater().inflate(R.layout.dialog_upload, null);
+        EditText editAuthor = form.findViewById(R.id.editAuthor);
         EditText editTitle = form.findViewById(R.id.editTitle);
         EditText editText = form.findViewById(R.id.editText);
         Button btnPick = form.findViewById(R.id.btnPickImage);
         dialogPreview = form.findViewById(R.id.imagePreview);
         dialogFileName = form.findViewById(R.id.textFileName);
 
+        editAuthor.setText(authorName);
         btnPick.setOnClickListener(b -> imagePicker.launch("image/*"));
 
         new AlertDialog.Builder(this)
                 .setTitle("새로운 이미지 게시")
                 .setView(form)
                 .setPositiveButton("게시", (d, w) -> {
+                    String author = editAuthor.getText().toString().trim();
                     String title = editTitle.getText().toString().trim();
                     String body = editText.getText().toString().trim();
 
+                    if (author.isEmpty()) {
+                        toast("작성자를 입력하세요");
+                        return;
+                    }
                     if (title.isEmpty()) {
                         toast("제목을 입력하세요");
                         return;
@@ -167,8 +181,9 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
 
+                    saveAuthor(author);
                     taskUpload = new UploadPost(pickedImageUri);
-                    taskUpload.execute(title, body);
+                    taskUpload.execute(title, body, author);
                 })
                 .setNegativeButton("취소", null)
                 .setOnDismissListener(d -> {
@@ -183,11 +198,9 @@ public class MainActivity extends AppCompatActivity {
         View form = getLayoutInflater().inflate(R.layout.dialog_settings, null);
         EditText editUrl = form.findViewById(R.id.editUrl);
         EditText editToken = form.findViewById(R.id.editToken);
-        EditText editAuthor = form.findViewById(R.id.editAuthor);
 
         editUrl.setText(siteUrl);
         editToken.setText(token);
-        editAuthor.setText(authorId);
 
         form.findViewById(R.id.btnPresetLocal)
                 .setOnClickListener(b -> editUrl.setText(LOCAL_URL));
@@ -202,9 +215,7 @@ public class MainActivity extends AppCompatActivity {
                     if (url.endsWith("/")) {
                         url = url.substring(0, url.length() - 1);
                     }
-                    String author = editAuthor.getText().toString().trim();
-                    saveSettings(url, editToken.getText().toString().trim(),
-                            author.isEmpty() ? "1" : author);
+                    saveSettings(url, editToken.getText().toString().trim());
                     toast("저장되었습니다");
                 })
                 .setNegativeButton("취소", null)
@@ -292,6 +303,7 @@ public class MainActivity extends AppCompatActivity {
 
                     if (bitmap != null) {
                         result.add(new PostItem(
+                                postJson.optString("author_name", ""),
                                 postJson.optString("title", ""),
                                 postJson.optString("text", ""),
                                 postJson.optString("published_date", ""),
@@ -356,6 +368,7 @@ public class MainActivity extends AppCompatActivity {
         protected Boolean doInBackground(String... params) {
             String title = params[0];
             String text = params[1];
+            String author = params[2];
             String boundary = "----PhotoViewer" + System.currentTimeMillis();
             String lineEnd = "\r\n";
 
@@ -378,7 +391,7 @@ public class MainActivity extends AppCompatActivity {
 
                 DataOutputStream out = new DataOutputStream(conn.getOutputStream());
 
-                writeField(out, boundary, "author", authorId);
+                writeField(out, boundary, "author_name", author);
                 writeField(out, boundary, "title", title);
                 writeField(out, boundary, "text", text);
                 writeField(out, boundary, "created_date", now);

@@ -9,6 +9,10 @@ class Post(models.Model):
     published_date = models.DateTimeField(blank=True, null=True)
     image = models.ImageField(upload_to='images/%Y/%m/%d/', default='images/default_error.png')
 
+    @property
+    def author_name(self):
+        return self.author.username
+
     def publish(self):
         self.published_date = timezone.now()
         self.save()

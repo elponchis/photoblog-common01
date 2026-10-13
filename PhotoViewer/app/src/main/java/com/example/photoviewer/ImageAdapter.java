@@ -40,7 +40,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
         holder.imageView.setImageBitmap(item.getImage());
         holder.textTitle.setText(item.getTitle());
         holder.textBody.setText(item.getText());
-        holder.textDate.setText(item.getPublishedDate());
+        holder.textDate.setText(item.getAuthor() + " · " + item.getPublishedDate());
 
         holder.imageView.setOnClickListener(v -> {
             if (listener != null) {

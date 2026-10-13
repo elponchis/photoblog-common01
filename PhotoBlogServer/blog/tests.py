@@ -120,6 +120,36 @@ class PostApiTest(TestCase):
 
         self.assertTrue(item['image'].startswith('http'))
 
+    def test_post_with_new_author_name_creates_user(self):
+        now = timezone.now().isoformat()
+        response = self.auth_client.post(API_URL, {
+            'author_name': '새작성자',
+            'title': '이름으로 게시',
+            'text': '본문',
+            'created_date': now,
+            'published_date': now,
+            'image': make_image_file(),
+        }, format='multipart')
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(User.objects.filter(username='새작성자').exists())
+        self.assertEqual(Post.objects.first().author.username, '새작성자')
+        self.assertEqual(json.loads(response.content)['author_name'], '새작성자')
+
+    def test_post_with_existing_author_name_reuses_user(self):
+        now = timezone.now().isoformat()
+        self.auth_client.post(API_URL, {
+            'author_name': 'tester',
+            'title': '기존 작성자',
+            'text': '본문',
+            'created_date': now,
+            'published_date': now,
+            'image': make_image_file(),
+        }, format='multipart')
+
+        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(Post.objects.first().author, self.user)
+
     def test_post_without_title_fails(self):
         now = timezone.now().isoformat()
         response = self.auth_client.post(API_URL, {
