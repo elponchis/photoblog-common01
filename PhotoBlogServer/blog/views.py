@@ -17,7 +17,7 @@ def published_authors():
 def post_list(request):
     posts = Post.objects.filter(
         published_date__lte=timezone.now()
-    ).order_by('published_date')
+    ).order_by('-published_date')
     return render(request, 'blog/post_list.html',
                   {'posts': posts, 'authors': published_authors()})
 
@@ -25,7 +25,7 @@ def author_posts(request, username):
     author = get_object_or_404(User, username=username)
     posts = Post.objects.filter(
         author=author, published_date__lte=timezone.now()
-    ).order_by('published_date')
+    ).order_by('-published_date')
     return render(request, 'blog/post_list.html', {
         'posts': posts,
         'authors': published_authors(),

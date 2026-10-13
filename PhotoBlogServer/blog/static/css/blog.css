@@ -61,31 +61,38 @@ h1, h2, h3, h4 {
 .intruder-image-list {
     object-fit: cover;
 }
-.post-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 40px 32px;
-    align-items: start;
+
+.post-list {
+    list-style: none;
+    padding: 0;
+    border-top: 1px solid #e5e5e5;
 }
 
-@media (max-width: 767px) {
-    .post-grid {
-        grid-template-columns: minmax(0, 1fr);
-    }
+.post-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 14px 4px;
+    border-bottom: 1px solid #e5e5e5;
 }
 
-.post-card {
-    margin-bottom: 0;
+.post-list-title,
+.post-list-title:visited {
+    color: #000000;
+    font-size: 18px;
+    font-weight: bold;
 }
 
-.post-card h1 {
-    font-size: 24pt;
-    margin: 12px 0 4px;
+.post-list .date {
+    white-space: nowrap;
 }
 
-.post-card .intruder-image-list {
+.post-image {
+    display: block;
     max-width: 100%;
     height: auto;
+    margin: 16px 0;
 }
 
 .author-nav {
