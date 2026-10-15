@@ -306,3 +306,70 @@ class PostListViewTest(TestCase):
 
         response = self.client.get('/')
         self.assertNotContains(response, '임시 저장 글')
+
+
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
+class PostEditViewTest(TestCase):
+    """웹 작성·수정 폼과 모델 메소드 동작 확인"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='editor', password='test1234')
+        self.client.force_login(self.user)
+
+    def test_post_new_get_shows_form(self):
+        response = self.client.get(reverse('post_new'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'blog/post_edit.html')
+        self.assertIn('form', response.context)
+
+    def test_post_new_post_saves_and_redirects(self):
+        response = self.client.post(reverse('post_new'),
+                                    {'title': '웹에서 쓴 글', 'text': '본문'})
+
+        post = Post.objects.get()
+        self.assertRedirects(response, reverse('post_detail', kwargs={'pk': post.pk}))
+        self.assertEqual(post.title, '웹에서 쓴 글')
+        self.assertEqual(post.author, self.user)
+        self.assertIsNotNone(post.published_date)
+
+    def test_post_edit_get_shows_form_with_post(self):
+        post = Post.objects.create(author=self.user, title='원래 제목', text='본문')
+
+        response = self.client.get(reverse('post_edit', kwargs={'pk': post.pk}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form'].instance, post)
+        self.assertContains(response, '원래 제목')
+
+    def test_post_edit_post_updates_and_redirects(self):
+        post = Post.objects.create(author=self.user, title='원래 제목', text='본문')
+
+        response = self.client.post(reverse('post_edit', kwargs={'pk': post.pk}),
+                                    {'title': '수정한 제목', 'text': '수정한 본문'})
+
+        post.refresh_from_db()
+        self.assertRedirects(response, reverse('post_detail', kwargs={'pk': post.pk}))
+        self.assertEqual(post.title, '수정한 제목')
+        self.assertEqual(post.text, '수정한 본문')
+        self.assertIsNotNone(post.published_date)
+
+    def test_js_test_page_opens(self):
+        response = self.client.get(reverse('js_test'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'blog/js_test.html')
+
+    def test_publish_sets_published_date(self):
+        post = Post.objects.create(author=self.user, title='임시 글', text='본문')
+        self.assertIsNone(post.published_date)
+
+        post.publish()
+
+        post.refresh_from_db()
+        self.assertIsNotNone(post.published_date)
+        self.assertLessEqual(post.published_date, timezone.now())
+
+    def test_str_returns_title(self):
+        post = Post.objects.create(author=self.user, title='문자열 확인', text='본문')
+        self.assertEqual(str(post), '문자열 확인')
