@@ -1,16 +1,24 @@
 package com.example.photoviewer;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,6 +26,9 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -36,6 +47,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -55,8 +67,14 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private RecyclerView recyclerView;
     private SwipeRefreshLayout swipeRefresh;
+    private EditText editSearch;
+    private LinearLayout layoutAuthorFilter;
+    private TextView textAuthorFilter;
 
+    // allPosts: 서버에서 받은 전체 목록, postList: 검색·작성자 조건을 거쳐 화면에 보이는 목록
+    private final List<PostItem> allPosts = new ArrayList<>();
     private final List<PostItem> postList = new ArrayList<>();
+    private String authorFilter = null;
     private ImageAdapter adapter;
 
     private String siteUrl;
@@ -68,25 +86,59 @@ public class MainActivity extends AppCompatActivity {
     private TextView dialogFileName;
     private ActivityResultLauncher<String> imagePicker;
 
-    private CLoadImage taskDownload;
-    private UploadPost taskUpload;
+    private CloadImage taskDownload;
+    private PutPost taskUpload;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // targetSdk 35 이상은 edge-to-edge가 강제되어 상태바·내비게이션바와 겹치지 않게 패딩을 준다
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return insets;
+        });
+
         textView = findViewById(R.id.textView);
         textServer = findViewById(R.id.textServer);
         progressBar = findViewById(R.id.progressBar);
         recyclerView = findViewById(R.id.recyclerView);
         swipeRefresh = findViewById(R.id.swipeRefresh);
+        editSearch = findViewById(R.id.editSearch);
+        layoutAuthorFilter = findViewById(R.id.layoutAuthorFilter);
+        textAuthorFilter = findViewById(R.id.textAuthorFilter);
 
-        adapter = new ImageAdapter(postList, this::showFullScreen);
+        adapter = new ImageAdapter(postList, this::showDetail,
+                item -> setAuthorFilter(item.getAuthor()));
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
         swipeRefresh.setOnRefreshListener(() -> onClickDownload(null));
+
+        editSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                applyFilter();
+            }
+        });
+        editSearch.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                hideKeyboard();
+                return true;
+            }
+            return false;
+        });
+        findViewById(R.id.btnClearAuthor).setOnClickListener(v -> setAuthorFilter(null));
 
         imagePicker = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
@@ -99,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
                         dialogPreview.setImageURI(uri);
                     }
                     if (dialogFileName != null) {
-                        dialogFileName.setText(uri.getLastPathSegment());
+                        dialogFileName.setText(displayName(uri));
                     }
                 });
 
@@ -137,8 +189,9 @@ public class MainActivity extends AppCompatActivity {
             taskDownload.cancel(true);
         }
 
-        taskDownload = new CLoadImage();
+        taskDownload = new CloadImage();
         taskDownload.execute(siteUrl + "/api_root/Post/");
+        Toast.makeText(getApplicationContext(), "Download", Toast.LENGTH_LONG).show();
     }
 
     // 새로운 이미지 게시 버튼
@@ -182,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     saveAuthor(author);
-                    taskUpload = new UploadPost(pickedImageUri);
+                    taskUpload = new PutPost(pickedImageUri);
                     taskUpload.execute(title, body, author);
                 })
                 .setNegativeButton("취소", null)
@@ -222,23 +275,93 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void showFullScreen(PostItem item) {
-        ImageView view = new ImageView(this);
-        view.setImageBitmap(item.getImage());
-        view.setAdjustViewBounds(true);
+    // 웹의 post_detail 페이지에 해당하는 전체 화면 상세 보기
+    private void showDetail(PostItem item) {
+        Dialog dialog = new Dialog(this, R.style.Theme_PhotoViewer);
+        dialog.setContentView(R.layout.dialog_detail);
 
-        new AlertDialog.Builder(this)
-                .setTitle(item.getTitle())
-                .setView(view)
-                .setPositiveButton("닫기", null)
-                .show();
+        View root = dialog.findViewById(R.id.detailRoot);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return insets;
+        });
+
+        ((TextView) dialog.findViewById(R.id.textDetailTitle)).setText(item.getTitle());
+        ((TextView) dialog.findViewById(R.id.textDetailDate)).setText(item.getPublishedDate());
+        ((TextView) dialog.findViewById(R.id.textDetailBody)).setText(item.getText());
+        ((ImageView) dialog.findViewById(R.id.imageDetail)).setImageBitmap(item.getImage());
+
+        TextView author = dialog.findViewById(R.id.textDetailAuthor);
+        author.setText(item.getAuthor());
+        author.setOnClickListener(v -> {
+            dialog.dismiss();
+            setAuthorFilter(item.getAuthor());
+        });
+
+        dialog.findViewById(R.id.btnDetailBack).setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+    }
+
+    private void setAuthorFilter(String author) {
+        authorFilter = author;
+        applyFilter();
+        recyclerView.scrollToPosition(0);
+    }
+
+    // 웹 목록의 제목 검색(q)·작성자별 보기와 같은 기준으로 받은 목록을 거른다
+    private void applyFilter() {
+        String query = editSearch.getText().toString().trim().toLowerCase(Locale.ROOT);
+
+        postList.clear();
+        for (PostItem item : allPosts) {
+            if (authorFilter != null && !authorFilter.equals(item.getAuthor())) {
+                continue;
+            }
+            if (!query.isEmpty() && !item.getTitle().toLowerCase(Locale.ROOT).contains(query)) {
+                continue;
+            }
+            postList.add(item);
+        }
+        adapter.notifyDataSetChanged();
+
+        if (authorFilter != null) {
+            layoutAuthorFilter.setVisibility(View.VISIBLE);
+            textAuthorFilter.setText(authorFilter + "님의 글 (" + postList.size() + "개)");
+        } else {
+            layoutAuthorFilter.setVisibility(View.GONE);
+        }
+
+        if (!query.isEmpty() || authorFilter != null) {
+            textView.setText(postList.isEmpty()
+                    ? "조건에 맞는 글이 없습니다."
+                    : "전체 " + allPosts.size() + "개 중 " + postList.size() + "개 표시");
+        } else if (!allPosts.isEmpty()) {
+            textView.setText("이미지 로드 성공! (" + allPosts.size() + "개)");
+        }
+    }
+
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(editSearch.getWindowToken(), 0);
+        editSearch.clearFocus();
+    }
+
+    private String displayName(Uri uri) {
+        try (Cursor c = getContentResolver().query(uri,
+                new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+                return c.getString(0);
+            }
+        }
+        return uri.getLastPathSegment();
     }
 
     private void toast(String message) {
         Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
     }
 
-    private class CLoadImage extends AsyncTask<String, Integer, List<PostItem>> {
+    private class CloadImage extends AsyncTask<String, Integer, List<PostItem>> {
 
         private String error = null;
 
@@ -281,12 +404,20 @@ public class MainActivity extends AppCompatActivity {
 
                 JSONArray aryJson = new JSONArray(sb.toString());
 
+                // 최신순: 서버가 같은 형식의 ISO 8601 문자열을 주므로 문자열 비교로 정렬된다
+                List<JSONObject> posts = new ArrayList<>();
                 for (int i = 0; i < aryJson.length(); i++) {
+                    posts.add(aryJson.getJSONObject(i));
+                }
+                Collections.sort(posts, (a, b) -> b.optString("published_date", "")
+                        .compareTo(a.optString("published_date", "")));
+
+                for (int i = 0; i < posts.size(); i++) {
                     if (isCancelled()) {
                         break;
                     }
 
-                    JSONObject postJson = aryJson.getJSONObject(i);
+                    JSONObject postJson = posts.get(i);
                     String imageUrl = postJson.optString("image", "");
 
                     if (imageUrl.isEmpty() || "null".equals(imageUrl)) {
@@ -310,7 +441,7 @@ public class MainActivity extends AppCompatActivity {
                                 bitmap));
                     }
 
-                    publishProgress((i + 1) * 100 / aryJson.length());
+                    publishProgress((i + 1) * 100 / posts.size());
                 }
 
             } catch (IOException | JSONException e) {
@@ -336,24 +467,22 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
 
+            allPosts.clear();
+            allPosts.addAll(images);
+
             if (images.isEmpty()) {
                 textView.setText("불러올 이미지가 없습니다.");
-            } else {
-                textView.setText("이미지 로드 성공! (" + images.size() + "개)");
             }
-
-            postList.clear();
-            postList.addAll(images);
-            adapter.notifyDataSetChanged();
+            applyFilter();
         }
     }
 
-    private class UploadPost extends AsyncTask<String, Void, Boolean> {
+    private class PutPost extends AsyncTask<String, Void, Boolean> {
 
         private final Uri imageUri;
         private String message = "";
 
-        UploadPost(Uri imageUri) {
+        PutPost(Uri imageUri) {
             this.imageUri = imageUri;
         }
 

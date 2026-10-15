@@ -9,36 +9,60 @@
         android:orientation="vertical"
         android:padding="20dp">
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="작성자"
+            android:textStyle="bold" />
+
         <EditText
             android:id="@+id/editAuthor"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="작성자"
+            android:hint="이름 (없으면 새로 만들어짐)"
             android:inputType="text" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="제목"
+            android:textStyle="bold" />
 
         <EditText
             android:id="@+id/editTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="제목"
+            android:hint="게시물 제목"
             android:inputType="text" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="내용"
+            android:textStyle="bold" />
 
         <EditText
             android:id="@+id/editText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
             android:gravity="top"
-            android:hint="내용"
+            android:hint="본문"
             android:inputType="textMultiLine"
             android:minLines="3" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="이미지"
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/btnPickImage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:text="이미지 선택" />
 
         <ImageView

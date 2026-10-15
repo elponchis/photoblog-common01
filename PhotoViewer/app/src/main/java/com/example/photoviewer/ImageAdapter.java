@@ -19,10 +19,13 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
 
     private final List<PostItem> postList;
     private final OnItemClickListener listener;
+    private final OnItemClickListener authorListener;
 
-    public ImageAdapter(List<PostItem> postList, OnItemClickListener listener) {
+    public ImageAdapter(List<PostItem> postList, OnItemClickListener listener,
+                        OnItemClickListener authorListener) {
         this.postList = postList;
         this.listener = listener;
+        this.authorListener = authorListener;
     }
 
     @NonNull
@@ -40,11 +43,17 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
         holder.imageView.setImageBitmap(item.getImage());
         holder.textTitle.setText(item.getTitle());
         holder.textBody.setText(item.getText());
-        holder.textDate.setText(item.getAuthor() + " · " + item.getPublishedDate());
+        holder.textAuthor.setText(item.getAuthor());
+        holder.textDate.setText(item.getPublishedDate());
 
-        holder.imageView.setOnClickListener(v -> {
+        holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onItemClick(item);
+            }
+        });
+        holder.textAuthor.setOnClickListener(v -> {
+            if (authorListener != null) {
+                authorListener.onItemClick(item);
             }
         });
     }
@@ -59,6 +68,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
         ImageView imageView;
         TextView textTitle;
         TextView textBody;
+        TextView textAuthor;
         TextView textDate;
 
         public ImageViewHolder(@NonNull View itemView) {
@@ -66,6 +76,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
             imageView = itemView.findViewById(R.id.imageViewItem);
             textTitle = itemView.findViewById(R.id.textTitle);
             textBody = itemView.findViewById(R.id.textBody);
+            textAuthor = itemView.findViewById(R.id.textAuthor);
             textDate = itemView.findViewById(R.id.textDate);
         }
     }
